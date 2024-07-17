@@ -1,0 +1,116 @@
+```vba
+Sub AddOlEObject()
+    Dim mainWorkBook As Workbook
+    Dim folderPaths As Variant
+    Dim folderPath As String
+    Dim fileNames As Variant
+    Dim fileName As Variant
+    Dim counter As Integer
+    Dim fileAccessGranted As Boolean
+    Dim filePermissionCandidates As Variant
+    Dim i As Integer
+    Dim j As Integer
+
+    ' Set the main workbook
+    Set mainWorkBook = ActiveWorkbook
+
+    ' Set the folder paths where images are stored
+    folderPaths = Array("Your_Folder_Path", _
+                        "Your_Folder_Path", _
+                        "Your_Folder_Path")
+
+    ' Initialize counter
+    counter = 1 ' Start counter at 1 for the first row
+
+    ' Loop through each folder
+    For i = LBound(folderPaths) To UBound(folderPaths)
+        folderPath = folderPaths(i)
+
+        ' Get all files in the folder (JPEG and PNG)
+        fileNames = GetFilesInFolder(folderPath)
+
+        ' Prepare array with file paths for which permissions are needed
+        ReDim filePermissionCandidates(LBound(fileNames) To UBound(fileNames))
+        For j = LBound(fileNames) To UBound(fileNames)
+            filePermissionCandidates(j) = folderPath & fileNames(j)
+        Next j
+
+        ' Request access from user
+        fileAccessGranted = GrantAccessToMultipleFiles(filePermissionCandidates)
+
+        ' If access is granted, continue with processing files, sheet name must be Object
+        If fileAccessGranted Then
+            ' Loop through each file name
+            For Each fileName In fileNames
+                ' Write file name to column A
+                Sheets("Object").Range("A" & counter).Value = fileName
+
+                ' Set column width and row height for image display
+                Sheets("Object").Columns("B").ColumnWidth = 25
+                Sheets("Object").Rows(counter).RowHeight = 100
+
+                ' Call function to embed image
+                EmbedImage folderPath & fileName, counter
+
+                ' Increment counter for next row
+                counter = counter + 1
+            Next
+        Else
+            MsgBox "Access to files was not granted. Macro execution aborted."
+        End If
+    Next i
+
+    ' Save the workbook
+    mainWorkBook.Save
+End Sub
+
+Function GetFilesInFolder(folderPath As String) As Variant
+    Dim fileNames As Variant
+    Dim fileName As String
+    Dim i As Integer
+
+    ' Initialize array to store file names
+    ReDim fileNames(0 To 0)
+    i = 0
+
+    ' Loop through each jpg file in the folder
+    fileName = Dir(folderPath & "*.jpg")
+    Do While fileName <> ""
+        ' Add file name to array
+        fileNames(i) = fileName
+        i = i + 1
+
+        ' Resize array for next file
+        ReDim Preserve fileNames(0 To i)
+
+        ' Get next file
+        fileName = Dir
+    Loop
+
+    ' Remove empty last element from array
+    If i > 0 Then
+        ReDim Preserve fileNames(0 To i - 1)
+    End If
+
+    ' Return array of file names
+    GetFilesInFolder = fileNames
+End Function
+
+Function EmbedImage(PicPath As String, counter As Integer)
+    Dim img As Shape
+    ' Embed the image into the workbook
+    Set img = Sheets("Object").Shapes.AddPicture(PicPath, _
+        LinkToFile:=msoFalse, _
+        SaveWithDocument:=msoCTrue, _
+        Left:=Sheets("Object").Range("B" & counter).Left, _
+        Top:=Sheets("Object").Range("B" & counter).Top, _
+        Width:=-1, _
+        Height:=-1)
+    With img
+        .LockAspectRatio = msoTrue
+        .Width = 50
+        .Height = 70
+        .Placement = xlMoveAndSize
+    End With
+End Function
+```
