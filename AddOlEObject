@@ -1,4 +1,4 @@
-```vba
+
 Sub AddOlEObject()
     Dim mainWorkBook As Workbook
     Dim folderPaths As Variant
